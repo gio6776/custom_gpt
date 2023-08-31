@@ -29,7 +29,7 @@ system_message = '''You are a professional Developer specialized in writing docu
 prompt_template = PromptTemplate.from_template(
     ''' Write a Documentation for the following SQL Code: 
         \n{sql_code}'''
-)
+)  
 
 # creating the messages (chat history) in the Streamlit session state
 if 'messages' not in st.session_state:
