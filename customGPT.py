@@ -59,7 +59,7 @@ with st.sidebar:
         # adding the response's content to the session state
         st.session_state.messages.append(AIMessage(content=response.content))
 
-st.session_state.messages
+# st.session_state.messages
 # message('this is chatgpt', is_user=False)
 # message('this is the user', is_user=True)
 
