@@ -1,0 +1,126 @@
+-- shopify_transaction_order_items_line
+
+-- REFUNDS
+WITH 
+
+-- Get all the refunds as negative value. Join to shopify_order since there we have all the product info
+refunds AS (
+    SELECT 
+        'refund' as refund_sales_status,
+        orderLineRefund.order_id,
+        orderLineRefund.order_line_id,
+        orderLineSales.shipping_address_country,
+        orderLineRefund.processed_at,
+        EXTRACT(MONTH FROM orderLineRefund.processed_at) as month_no,
+        EXTRACT(WEEK(MONDAY) FROM orderLineRefund.processed_at) as week_no,
+        orderLineSales.year_week_dateRange as year_week_dateRange,
+
+        -- Monetary values
+        -1 * orderLineRefund.refund_amount_dkk AS refund_amount_dkk,
+        -1 * orderLineRefund.refund_amount_dkk * 0.1344 as refund_amount_eur,
+
+        -1 * orderLineRefund.refund_tax_dkk as refund_tax_dkk,
+        -1 * orderLineRefund.refund_tax_dkk * 0.1344 as refund_tax_eur,
+
+        -1 * orderLineSales.quantity as quantity,
+
+        -- PRODUCT INFO    
+        orderLineSales.Product_category,
+        orderLineSales.Marketing_Category,
+        orderLineSales.Product_type,
+        orderLineSales.Pack,
+
+        --marketing info
+        source_klaviyo,
+        medium_klaviyo,
+
+    FROM {{staging.shopify.website_OrderLineRefund_with_ProcessedAtDate}} orderLineRefund
+    LEFT JOIN {{staging.shopify.new_shopifyOrders}} orderLineSales
+        ON orderLineRefund.order_line_id = orderLineSales.order_line_id
+),
+
+
+sales AS (
+    SELECT 
+        'sales' as refund_sales_status,
+        order_id,
+        order_line_id,
+        shipping_address_country,
+        created_at,
+        month_no,
+        week_no,
+        year_week_dateRange,
+
+        total_line_price_dkk_incl_tax,
+        total_line_price_eur_incl_tax,
+
+        line_tax_dkk + line_shipping_tax_dkk AS total_line_tax_dkk,
+        line_tax_eur + line_shipping_tax_eur AS total_line_tax_eur,
+
+        quantity,
+
+        Product_category,
+        Marketing_Category,
+        Product_type,
+        Pack,
+
+        -- Marketing info
+        source_klaviyo,
+        medium_klaviyo,
+
+    FROM {{staging.shopify.new_shopifyOrders}}
+),
+
+sales_and_refunds AS (
+    SELECT
+        *
+    FROM sales
+    UNION ALL
+    SELECT 
+        *
+    FROM refunds
+
+)
+
+-- FINAL SELECT STATEMENT
+-- SIMPLY APPEND REFUNDS TO SALES, SO WE'LL HAVE CASH IN AND CASH OUT.
+
+/*
+    Why we have to change the sign to negative here, and not in WITH CLAUSE? 
+        For some reason when you do UNION ALL, all the signs go back to positive. Hence, the Union all is done on another WITH CLAUSE
+            and the sign is changed to negative here. And the best of all of that, it happens just to FLOAT value not integers.....
+*/
+SELECT 
+    refund_sales_status,
+    order_id,
+    order_line_id,
+    shipping_address_country,
+    created_at,
+    month_no,
+    week_no,
+    year_week_dateRange,
+    CASE refund_sales_status
+        WHEN 'refund' THEN -1 * total_line_price_dkk_incl_tax
+        ELSE total_line_price_dkk_incl_tax
+    END AS total_line_price_dkk_incl_tax,
+    CASE refund_sales_status
+        WHEN 'refund' THEN -1 * total_line_price_eur_incl_tax
+        ELSE total_line_price_eur_incl_tax
+    END AS total_line_price_eur_incl_tax,
+    CASE refund_sales_status
+        WHEN 'refund' THEN -1 * total_line_tax_dkk
+        ELSE total_line_tax_dkk
+    END AS total_line_tax_dkk,
+    CASE refund_sales_status
+        WHEN 'refund' THEN -1 * total_line_tax_eur
+        ELSE total_line_tax_eur
+    END AS total_line_tax_eur,
+    quantity,
+    Product_category,
+    Marketing_Category,
+    Product_type,
+    Pack,
+
+    -- marketing info
+
+FROM  sales_and_refunds
