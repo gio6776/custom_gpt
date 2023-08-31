@@ -40,7 +40,7 @@ if 'messages' not in st.session_state:
 
 # creating the sidebar
 with st.sidebar:
-    st.write('Simply paste the SQL Code below to generate a documentation for it'')
+    st.write('Simply paste the SQL Code below to generate a documentation for it')
     user_prompt = st.text_input(label='Paste SQL Code')
 
     # st.write(st.session_state.messages)
