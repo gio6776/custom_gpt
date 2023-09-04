@@ -19,6 +19,13 @@ st.set_page_config(
 st.subheader('SQL Code Documentation Assistant 🤖')
 st.markdown('##### Simpy Copy and Paste you SQL Code')
 
+with st.sidebar:
+    '''This section uses LangChain\'s Prompt Tempalte to generate a Documentation in a stardardized format.
+    \n The Documentation generate will have three main headings:
+    \n 1. Model Overview: 
+    \n 2. CTEs:
+    \n 3. Fields Description:'''
+
 chat = ChatOpenAI(model_name='gpt-3.5-turbo', temperature=0.5, streaming=True, callbacks=[StreamingStdOutCallbackHandler()])
 
 # setting the behaviour of the system message (role)

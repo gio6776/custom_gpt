@@ -34,11 +34,15 @@ if 'sysrole_disabler' not in st.session_state:
 if 'option_disabler' not in st.session_state:
     st.session_state.option_disabler = False
 
+if 'user_input_disabler' not in st.session_state:
+    st.session_state.user_input_disabler = True
+
 def define_parameters():
     # define the model parameters
     st.session_state.temp_disabler = True
     st.session_state.sysrole_disabler = True
     st.session_state.option_disabler = True
+    st.session_state.user_input_disabler = False
 
 
 def change_system_state(): 
@@ -50,6 +54,7 @@ def change_system_state():
 
 
 st.subheader('Custom GPT 🤖')
+st.markdown('#### Choose a Temperature, a System Role, and click on Define Model Parameters to start asking questions')
 
 
 with st.sidebar:
@@ -68,10 +73,7 @@ with st.sidebar:
     elif option == 'Python Specialist':
         st.session_state.system_message = sys_message_pythorn_dev
 
-    if option != 'Custom':
-        st.text_area('#### System Role:',st.session_state.system_message, height=200, disabled=st.session_state.sysrole_disabler)
-    else:
-        system_role_input = st.text_input('#### Define The System Role:', height=200, disabled=st.session_state.sysrole_disabler)
+    st.text_area('#### System Role:',st.session_state.system_message, height=200, disabled=True)
     st.button('Define Model Parameters', on_click=define_parameters)
 
 chat = ChatOpenAI(model_name='gpt-3.5-turbo', temperature=temperature, streaming=True, callbacks=[StreamingStdOutCallbackHandler()])
@@ -88,7 +90,7 @@ if 'messages' not in st.session_state:
             )
 
 # if the user entered a question, append it to the session state
-if prompt := st.chat_input("Ask a Quesiton"):
+if prompt := st.chat_input("Ask a Quesiton", disabled=st.session_state.user_input_disabler):
     if len(st.session_state.messages) == 1:
         prompt = prompt_template.format(prompt=prompt)
     else:
