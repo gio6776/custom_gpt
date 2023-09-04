@@ -16,101 +16,99 @@ st.set_page_config(
     page_icon='🤖'
 )
 
-def check_password():
-    """Returns `True` if the user had a correct password."""
+# setting the behaviour of the system message (role)
+sys_message_general_dev = '''When assisting me in creating SQL queries, you should provide answers using Google Big Query  SQL Syntax.
+When assisting me in crafting and correcting any pieces of text ensure to not use too many filer words and keep the language simple and straight to the point. 
+- Your coding answers should be concise and straight to the point.
+- You should think step by step when providing a coding answer
+I am a Data Analyst based in Copenhagen who works for sports clothing brand called Danish Endurance. The tech stack I use is Google Big Query, hence, I do a lot of data modeling with SQL. Moreover, I also develop dashboards on Metabase which are also done in SQL.'''
 
-    def password_entered():
-        """Checks whether a password entered by the user is correct."""
-        if (
-            st.session_state["username"] in st.secrets["passwords"]
-            and st.session_state["password"]
-            == st.secrets["passwords"][st.session_state["username"]]
-        ):
-            st.session_state["password_correct"] = True
-            del st.session_state["password"]  # don't store username + password
-            del st.session_state["username"]
-        else:
-            st.session_state["password_correct"] = False
+sys_message_pythorn_dev = '''You are a professional Python Developer. Think Step by Step when giving your answers'''
 
-    if "password_correct" not in st.session_state:
-        # First run, show inputs for username + password.
-        st.text_input("Username", on_change=password_entered, key="username")
-        st.text_input(
-            "Password", type="password", on_change=password_entered, key="password"
-        )
-        return False
-    elif not st.session_state["password_correct"]:
-        # Password not correct, show input + error.
-        st.text_input("Username", on_change=password_entered, key="username")
-        st.text_input(
-            "Password", type="password", on_change=password_entered, key="password"
-        )
-        st.error("😕 User not known or password incorrect")
-        return False
+if 'temp_disabler' not in st.session_state:
+    st.session_state.temp_disabler = False
+
+if 'sysrole_disabler' not in st.session_state:
+    st.session_state.sysrole_disabler = False
+
+if 'option_disabler' not in st.session_state:
+    st.session_state.option_disabler = False
+
+def define_parameters():
+    # define the model parameters
+    st.session_state.temp_disabler = True
+    st.session_state.sysrole_disabler = True
+    st.session_state.option_disabler = True
+
+
+def change_system_state(): 
+    if st.session_state.sysrole_button == 'General Dev':
+        st.session_state.system_message = sys_message_general_dev
+    elif st.session_state.sysrole_button == 'Python Specialist':
+        st.session_state.system_message = sys_message_pythorn_dev
+    st.session_state.messages[0] = SystemMessage(content=st.session_state.system_message)
+
+
+st.subheader('Custom GPT 🤖')
+
+
+with st.sidebar:
+    temperature = st.slider('Temperature', 0.0, 1.0, 0.7, 0.1, disabled=st.session_state.temp_disabler)
+    # Drop dowm menu for the system message
+    option = st.selectbox(
+        '#### Choose a System a Role',
+        (' ','General Dev', 'Python Specialist'),
+        key='sysrole_button',
+        on_change=change_system_state
+        , disabled=st.session_state.option_disabler)
+    if option == ' ':
+        st.session_state.system_message = ''
+    if option == 'General Dev':
+        st.session_state.system_message = sys_message_general_dev
+    elif option == 'Python Specialist':
+        st.session_state.system_message = sys_message_pythorn_dev
+    st.text_area('#### System Role:',st.session_state.system_message, height=200, disabled=st.session_state.sysrole_disabler)
+    st.button('Define Model Parameters', on_click=define_parameters)
+
+chat = ChatOpenAI(model_name='gpt-3.5-turbo', temperature=temperature, streaming=True, callbacks=[StreamingStdOutCallbackHandler()])
+
+prompt_template = PromptTemplate.from_template(
+    '''{prompt}'''
+)  
+
+# creating the messages (chat history) in the Streamlit session state
+if 'messages' not in st.session_state:
+    st.session_state.messages = []
+    st.session_state.messages.append(
+            SystemMessage(content=st.session_state.system_message)
+            )
+
+# if the user entered a question, append it to the session state
+if prompt := st.chat_input("Ask a Quesiton"):
+    if len(st.session_state.messages) == 1:
+        prompt = prompt_template.format(prompt=prompt)
     else:
-        # Password correct.
-        return True
+        prompt = prompt
 
-if check_password():
-    tab1, tab2= st.tabs(["Documentation Assistant", "Model Assistant",])
-    with tab1:
-        st.subheader('SQL Code Documentation Assistant 🤖')
+    st.session_state.messages.append(
+        HumanMessage(content=prompt)
+    )
+    with st.spinner('Working on your request ...'):
+        # creating the ChatGPT response
+        response = chat(st.session_state.messages)
 
-        # chat = ChatOpenAI(model_name='gpt-3.5-turbo', temperature=0.5, streaming=True, callbacks=[StreamingStdOutCallbackHandler()])
+    # adding the response's content to the session state
+    st.session_state.messages.append(AIMessage(content=response.content))
 
-        # # setting the behaviour of the system message (role)
-        # system_message = '''You are a professional Developer specialized in writing documentation of SQL code in Google Big Query Syntax. Your answers should have three main headings: 
-        #     \n 1. Model Overview: An one-paragraph written in an objective and concise way describing the model and its usage. It must contain two sentences separated by a dot 
-        #     \n 2. CTEs: A description for each CTE in the SQL Code. Each CTE should be in a different line with the following format (CTE: description)
-        #     \n 3. Fields Description: A description of each field produced by the final SELECT statement. ChatGPT, follow the rules below:'''
+# displaying the messages (chat history)
+for i, msg in enumerate(st.session_state.messages[1:]):
+    if i % 2 == 0:
+        with st.chat_message("user"):
+            st.markdown(prompt)
+    else:
+        with st.chat_message("assistant"):
+            st.markdown(msg.content)
 
-
-        # prompt_template = PromptTemplate.from_template(
-        #     ''' Write a Documentation for the following SQL Code: 
-        #         \n{sql_code}'''
-        # )  
-
-        # # creating the messages (chat history) in the Streamlit session state
-        # if 'messages' not in st.session_state:
-        #     st.session_state.messages = []
-        #     st.session_state.messages.append(
-        #             SystemMessage(content=system_message)
-        #             )
-
-        # # # creating the sidebar
-        # # st.write('Simply paste the SQL Code below to generate a documentation for it')
-        # # user_prompt = st.text_input(label='Paste SQL Code')
-
-        # # st.write(st.session_state.messages)
-
-        # # if the user entered a question, append it to the session state
-        # if prompt := st.chat_input("What is up?"):
-        #     prompt = prompt_template.format(sql_code=prompt)
-
-        #     st.session_state.messages.append(
-        #         HumanMessage(content=prompt)
-        #     )
-        #     with st.spinner('Working on your request ...'):
-        #         # creating the ChatGPT response
-        #         response = chat(st.session_state.messages)
-
-        #     # adding the response's content to the session state
-        #     st.session_state.messages.append(AIMessage(content=response.content))
-
-        # # st.session_state.messages
-        # # message('this is chatgpt', is_user=False)
-        # # message('this is the user', is_user=True)
-
-        # # displaying the messages (chat history)
-        # for i, msg in enumerate(st.session_state.messages[1:]):
-        #     if i % 2 == 0:
-        #         with st.chat_message("user"):
-        #             st.markdown(prompt)
-        #     else:
-        #         with st.chat_message("assistant"):
-        #             st.markdown(msg.content)
-    with tab2:
-        st.subheader('Model Builder')
-        
-
-        # run the app: streamlit run front_end_customGPT.py
+# st.session_state.messages
+# st.session_state.system_message
+# run the app: streamlit run front_end_customGPT.py
