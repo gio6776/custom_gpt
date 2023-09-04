@@ -67,7 +67,11 @@ with st.sidebar:
         st.session_state.system_message = sys_message_general_dev
     elif option == 'Python Specialist':
         st.session_state.system_message = sys_message_pythorn_dev
-    st.text_area('#### System Role:',st.session_state.system_message, height=200, disabled=st.session_state.sysrole_disabler)
+
+    if option != 'Custom':
+        st.text_area('#### System Role:',st.session_state.system_message, height=200, disabled=st.session_state.sysrole_disabler)
+    else:
+        system_role_input = st.text_input('#### Define The System Role:', height=200, disabled=st.session_state.sysrole_disabler)
     st.button('Define Model Parameters', on_click=define_parameters)
 
 chat = ChatOpenAI(model_name='gpt-3.5-turbo', temperature=temperature, streaming=True, callbacks=[StreamingStdOutCallbackHandler()])
