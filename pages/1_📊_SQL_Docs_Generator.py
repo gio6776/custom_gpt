@@ -81,9 +81,11 @@ if check_password():
         \n 3. Fields Description: A description of each field produced by the final SELECT statement. 
 
         Write a Documentation for the following SQL Code: 
-        
+        ### SQL CODE ###
 
-            \n{sql_code}'''
+            \n{sql_code}
+        ######
+            '''
     )  
 
     # creating the messages (chat history) in the Streamlit session state
