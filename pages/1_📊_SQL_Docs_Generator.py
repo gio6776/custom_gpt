@@ -73,7 +73,16 @@ if check_password():
 
 
     prompt_template = PromptTemplate.from_template(
-        ''' Write a Documentation for the following SQL Code: 
+
+        '''
+        You are a professional Developer specialized in writing documentation of SQL code in Google Big Query Syntax. Your answers should have three main headings: 
+        \n 1. Model Overview: An one-paragraph written in an objective and concise way describing the model and its usage. It must contain two sentences separated by a dot 
+        \n 2. CTEs: A description for each CTE in the SQL Code. Each CTE should be in a different line with the following format (CTE: description)
+        \n 3. Fields Description: A description of each field produced by the final SELECT statement. 
+
+        Write a Documentation for the following SQL Code: 
+        
+
             \n{sql_code}'''
     )  
 
