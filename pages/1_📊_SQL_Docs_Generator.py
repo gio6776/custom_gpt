@@ -128,5 +128,5 @@ if check_password():
             with st.chat_message("assistant"):
                 st.markdown(msg.content)
 
-    # st.session_state.messages
+    st.session_state.messages
     # run the app: streamlit run front_end_customGPT.py
