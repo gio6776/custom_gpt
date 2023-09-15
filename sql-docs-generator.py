@@ -197,6 +197,4 @@ for i, msg in enumerate(st.session_state.messages[1:]):
         with st.chat_message("assistant"):
             st.markdown(msg.content)
 
-
-
 #     st.session_state.messages.append(AIMessage(content=response.content))
