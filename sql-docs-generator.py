@@ -10,8 +10,6 @@ from streamlit_chat import message
 from langchain import PromptTemplate
 from dotenv import load_dotenv, find_dotenv
 load_dotenv(find_dotenv(), override=True)
-import pyperclip
-
 
 
 st.set_page_config(
